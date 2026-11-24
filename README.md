@@ -1,113 +1,54 @@
-# KatAI — Native English Learning AI for KatLearn
+# KatAI Native v0.3.0
 
-> **Project status:** Planning / Specification  
-> **Owner:** PTNN Music Group  
-> **Repository:** `KatAI_PFKATLEARN_SYSTEM`  
-> **Primary product:** KatLearn  
-> **Current principle:** Build an independently trained, English-learning-focused AI system. Do not disguise a third-party chatbot API as a native model.
+KatAI is a local-first bilingual (English/Vietnamese) English-learning AI project for KatLearn. The native decoder-only Transformer is randomly initialized and trained by this project; there is no Gemini or hosted-chatbot fallback.
 
-## 1. Vision
+## Implemented in this code baseline
 
-KatAI is a task-specific AI system designed to support English learning inside KatLearn. It is not intended to be a general-purpose chatbot and must not answer unrelated school subjects or general knowledge requests as if they were supported features.
+- **Native model foundation:** decoder-only Transformer, SentencePiece tokenizer pipeline, training loop, checkpoint/resume, inference engine, and CLI.
+- **Safety baseline v2:** Unicode normalization, invisible-format-character removal, prompt-injection pattern checks, conservative English-learning scope gate, and tool payload limits.
+- **Skill Router:** routes quiz-generation requests to KatWork and progress requests to KatGames.
+- **KatWork:** runs inside KatLearn's existing **PHÒNG HỌC AI** chat flow. It returns a structured multiple-choice quiz pack and has a direct `POST /v1/katwork/quiz` endpoint. Starter bank: Present Perfect (10 distinct questions), Simple Past (5), Articles (3). Unsupported topics fail closed until a native generator is connected.
+- **KatGames:** read-only progress summarizer. It has no method for changing scores, rewards, game state, or KatCoin. Live KatLearn data adapter is not configured.
+- **Automated tests:** safety, scope, routing, quiz validation, API, and read-only progress tests.
 
-The long-term goal is to develop and train KatAI's own language model. The first milestones will establish the data pipeline, evaluation, safety and scope enforcement, then train increasingly capable models. A small model trained from scratch on a CPU is an engineering prototype—not a substitute for a production-scale language model.
+## Run locally
 
-## 2. Non-negotiable product requirements
-
-1. **English-learning scope only.** Supported tasks include vocabulary, definitions, pronunciation guidance, grammar, sentence construction, reading, writing, listening practice, speaking practice, and English-learning study plans.
-2. **Fixed out-of-scope response.** For requests outside English learning, return exactly:
-   `Hiện tại, chúng tôi không hỗ trợ các môn học khác ngoài Tiếng Anh. Xin cảm ơn`
-3. **Native-model direction.** The target model must be trained and owned by this project. Gemini or another hosted chatbot must not be a hidden generation fallback.
-4. **Layered safety.** Input checks, task/scope classification, output checks, rate limits, and evaluation work alongside the model. A prompt or regex alone is not a safety guarantee.
-5. **No arbitrary tool access.** The model does not receive shell, filesystem, network, account, or KatLearn administrative capabilities.
-6. **Honest capability boundaries.** If the model is uncertain or a task is unsupported, it should say so rather than invent an answer.
-7. **Privacy and data provenance.** Training data must have documented sources and permitted use. Do not train on private learner conversations by default.
-
-## 3. System at a glance
-
-```text
-KatLearn UI
-    |
-KatLearn server / authenticated API
-    |
-KatAI service boundary
-    |
-Input normalization
-    |
-Safety pre-check -> English-learning scope gate
-    |                         |
-blocked / out of scope        allowed task
-    |                         |
-fixed response                task router
-                              |
-                       native KatAI model
-                              |
-                       output safety check
-                              |
-                       response + metadata
+```powershell
+python -m venv .venv
+.venv\\Scripts\\Activate.ps1
+pip install -e .
+python -m pytest -q
+uvicorn kat_ai.api.main:app --host 127.0.0.1 --port 8000
 ```
 
-The scope and safety gates are independent of the generative model. The model cannot override them.
+Train a tokenizer and model using an authorized JSONL corpus:
 
-## 4. Planned repository structure
-
-```text
-KatAI_PFKATLEARN_SYSTEM/
-├── README.md
-├── docs/
-│   ├── 00-VISION-AND-REQUIREMENTS.md
-│   ├── 01-SYSTEM-ARCHITECTURE.md
-│   ├── 02-ROADMAP-AND-MILESTONES.md
-│   ├── 03-DATASET-AND-TRAINING-POLICY.md
-│   ├── 04-SAFETY-AND-EVALUATION.md
-│   ├── 05-LOCAL-DEVELOPMENT-AND-DEPLOYMENT.md
-│   └── 06-V0.3-SAFETY-AND-SKILLS.md
-├── kat_ai/                 # implementation, introduced after design review
-├── datasets/               # metadata/manifests; no private data or secrets
-├── experiments/            # reproducible experiment configs and reports
-├── tests/
-└── scripts/
+```bash
+katai train-tokenizer --input datasets/train.jsonl --output artifacts/tokenizer --vocab-size 8000
+katai train --data datasets/train.jsonl --tokenizer artifacts/tokenizer/tokenizer.model --output checkpoints/katai.pt
 ```
 
-## 5. Development phases
+Configure `KATAI_CHECKPOINT`, `KATAI_TOKENIZER`, and `KATAI_API_KEY` before connecting a client. The service should remain bound to localhost during development.
 
-- **Phase 0 — Specification:** agree on scope, architecture, safety policy, data policy, and measurable acceptance criteria.
-- **Phase 1 — Foundation:** create a reproducible Python environment, data schemas, test harness, and service interface.
-- **Phase 2 — Safety and scope:** implement deterministic policy gates and a separately evaluated intent/scope classifier.
-- **Phase 3 — Data pipeline:** curate permitted English-learning examples, split datasets without leakage, and document provenance.
-- **Phase 4 — Native model prototype:** build tokenizer/model/training loop and train a small experimental model from initialized weights.
-- **Phase 5 — Tutor quality:** evaluate and improve task-specific performance; add supervised instruction examples only when the data and compute justify it.
-- **Phase 6 — KatLearn integration:** expose a narrow authenticated API and connect it to KatLearn without changing unrelated LMS features.
-- **Phase 7 — Release readiness:** security, privacy, regression, load, and quality evaluation before any real-user rollout.
+## KatWork request example
 
-See the documents in `docs/` for the full plan.
+```http
+POST /v1/chat
+Content-Type: application/json
 
-## 6. v0.3.0 upgrade direction
+{"message":"Tạo 10 câu trắc nghiệm về Present Perfect"}
+```
 
-The v0.3.0 specification is recorded in [docs/06-V0.3-SAFETY-AND-SKILLS.md](docs/06-V0.3-SAFETY-AND-SKILLS.md).
+The response contains `skill: "KatWork"` and a structured `tool_result` pack for the KatLearn adapter. KatLearn remains responsible for rendering, collecting answers, and scoring.
 
-- **Safety Engine v2:** layered request/output checks, strict tool permissions, prompt-injection defenses, privacy boundaries, and regression tests.
-- **Skill Router:** routes supported English-learning requests to narrowly permissioned skills.
-- **KatWork:** backend quiz-generation skill invoked from KatLearn's existing **PHÒNG HỌC AI** tab. KatLearn remains responsible for quiz rendering, answer submission, and scoring.
-- **KatGames:** read-only progress analysis by default. It must not change KatCoin, rewards, scores, or game synchronization.
-- **Learning skills:** KatVocab, KatGrammar, KatTranslate, KatWriting, KatReading, KatListening, KatIELTS, KatProgress, KatStudyPlan, and KatDictionary.
+## Honest limitations
 
-These are approved architectural targets, not claims of completed implementation.
+- No trained checkpoint or tokenizer is bundled. Free-form model chat returns HTTP 503 until a model is trained and configured.
+- KatWork's starter bank is intentionally limited; it does not invent questions for unsupported topics.
+- KatGames currently summarizes supplied progress data only. Real user progress must be fetched through a confirmed, authenticated server-side KatLearn adapter; client-provided user IDs or scores must never be trusted.
+- Safety checks are defense-in-depth prototypes, not a guarantee. Public deployment still requires authentication enforcement, rate limiting, threat modeling, security review, and integration tests.
+- KatLearn UI integration is not yet verified against the actual quiz schema.
 
-## 7. Hardware reality
+## Release state
 
-The currently known development machine is a Dell OptiPlex 7050 Micro with Intel Core i5-7500T, 16 GB RAM, and Intel HD 630 integrated graphics. It can support Python development, small classifiers, data preprocessing, and very small CPU training experiments. It is not a practical machine for pretraining a capable modern LLM. Initial model work must be sized accordingly; larger experiments may require rented or otherwise available GPU compute.
-
-## 8. What this project is not
-
-- Not a Gemini wrapper renamed as KatAI.
-- Not a universal homework solver.
-- Not a promise that a tiny CPU-trained model will match commercial assistants.
-- Not a system that learns automatically from student chats without explicit governance.
-- Not a replacement for teacher judgment or verified learning materials.
-
-## 9. Current status
-
-This repository is a planning/specification repository. The v0.3.0 document records the requested architecture and acceptance criteria; it does **not** mean the features are implemented, the model has been trained, tests have passed, or KatLearn integration is complete.
-
-**Next engineering step:** audit the existing v0.2.0 source, then implement Safety Engine v2 and its regression tests before enabling skills for real learners.
+**v0.3.0 code prototype.** Automated tests in this repository must pass before release. Do not treat this version as production-ready.
