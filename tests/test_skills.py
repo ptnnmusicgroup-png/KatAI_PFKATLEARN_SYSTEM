@@ -20,3 +20,10 @@ def test_katgames_read_only():
 
 def test_katgames_rejects_invalid_data():
     with pytest.raises(ValueError): summarize_progress({"sessions":"invalid"})
+
+
+def test_skill_permissions_default_deny():
+    from kat_ai.skills.permissions import authorize_skill_action
+    assert authorize_skill_action("KatWork", "create_quiz").allowed
+    assert not authorize_skill_action("KatWork", "read_database").allowed
+    assert not authorize_skill_action("UnknownSkill", "anything").allowed
