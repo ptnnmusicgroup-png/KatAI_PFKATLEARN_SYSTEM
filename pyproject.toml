@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "katai-native"
+version = "0.3.0"
+description = "A bilingual English-learning language model trained from scratch."
+requires-python = ">=3.10"
+dependencies = ["torch>=2.2", "sentencepiece>=0.2.0", "fastapi>=0.110", "uvicorn[standard]>=0.27", "pydantic>=2.6", "PyYAML>=6.0"]
+
+[project.scripts]
+katai = "kat_ai.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["kat_ai*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
