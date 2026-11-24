@@ -7,6 +7,7 @@ from kat_ai.api.schemas import ChatRequest, ChatResponse, QuizRequest
 from kat_ai.safety.scope import classify_scope, REFUSAL
 from kat_ai.safety.filters import contains_prompt_injection, output_is_acceptable
 from kat_ai.inference.engine import InferenceEngine
+from kat_ai.inference.engine_v1 import KatAI1InferenceEngine
 from kat_ai.skills.router import route_intent
 from kat_ai.skills.katwork import KatWork
 from kat_ai.skills.permissions import authorize_skill_action
@@ -16,10 +17,11 @@ katwork=KatWork()
 
 @lru_cache(maxsize=1)
 def get_engine():
-    checkpoint=os.getenv("KATAI_CHECKPOINT","checkpoints/katai.pt")
-    tokenizer=os.getenv("KATAI_TOKENIZER","artifacts/tokenizer/tokenizer.model")
+    model_version=os.getenv("KATAI_MODEL_VERSION","0.3")
+    checkpoint=os.getenv("KATAI1_CHECKPOINT","checkpoints/kai1.pt") if model_version=="1" else os.getenv("KATAI_CHECKPOINT","checkpoints/katai.pt")
+    tokenizer=os.getenv("KATAI1_TOKENIZER",os.getenv("KATAI_TOKENIZER","artifacts/tokenizer/tokenizer.model"))
     if not os.path.isfile(checkpoint) or not os.path.isfile(tokenizer): return None
-    return InferenceEngine(checkpoint,tokenizer)
+    return KatAI1InferenceEngine(checkpoint,tokenizer) if model_version=="1" else InferenceEngine(checkpoint,tokenizer)
 
 def verify_auth(authorization):
     expected=os.getenv("KATAI_API_KEY")
@@ -45,8 +47,10 @@ def health():
 @app.get("/v1/model/info")
 def model_info(authorization: str | None=Header(default=None)):
     verify_auth(authorization); engine=get_engine()
-    if engine is None: return {"loaded":False,"model":"katai-native","version":__version__,"skills":["KatWork","KatGames"]}
-    return {"loaded":True,"model":"katai-native","version":__version__,"architecture":"decoder-only-transformer",
+    model_version=os.getenv("KATAI_MODEL_VERSION","0.3")
+    model_id="katlearn-kai-1" if model_version=="1" else "katai-native"
+    if engine is None: return {"loaded":False,"model":model_id,"version":model_version,"skills":["KatWork","KatGames"]}
+    return {"loaded":True,"model":model_id,"version":model_version,"architecture":"rope-rmsnorm-swiglu-transformer" if model_version=="1" else "decoder-only-transformer",
         "origin":"trained-from-scratch","languages":["en","vi"],"training_step":engine.step,
         "parameters":sum(p.numel() for p in engine.model.parameters()),"device":str(engine.device),
         "skills":["KatWork","KatGames"]}
@@ -62,7 +66,7 @@ def create_katwork_quiz(request: QuizRequest,authorization: str | None=Header(de
 def chat(request: ChatRequest,authorization: str | None=Header(default=None)):
     verify_auth(authorization)
     if contains_prompt_injection(request.message):
-        return ChatResponse(success=True,model="katai-native",task=request.task,language=request.language,
+        return ChatResponse(success=True,model="katlearn-kai-1" if os.getenv("KATAI_MODEL_VERSION","0.3")=="1" else "katai-native",task=request.task,language=request.language,
             response="Mình có thể hỗ trợ các nhiệm vụ học tiếng Anh trong phạm vi KatAI.",
             blocked=True,reason="prompt_injection_pattern")
     scope=classify_scope(request.message)
