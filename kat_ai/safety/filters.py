@@ -3,7 +3,7 @@ import re
 import unicodedata
 
 PATTERNS = (
-    r"ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|rules?|messages?)",
+    r"ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instruc\s*tions?|rules?|messages?)",
     r"disregard\s+(all\s+)?(previous|prior|above)\s+(instructions?|rules?)",
     r"(reveal|print|show|repeat|expose)\s+(the\s+)?(system prompt|hidden instructions|developer message|api key|secret)",
     r"(act as|pretend to be)\s+(an?\s+)?(unrestricted|uncensored|jailbroken|no[- ]rules)\s+(ai|assistant|model)",
