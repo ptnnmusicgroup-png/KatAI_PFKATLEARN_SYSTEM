@@ -14,7 +14,8 @@ def test_v1_forward_and_loss():
 
 
 def test_v1_rejects_odd_head_dimension():
-    cfg = KatAI1Config(vocab_size=128, d_model=30, n_heads=3)
+    # 30 / 2 = 15, which is odd; 30 / 3 = 10 would be valid.
+    cfg = KatAI1Config(vocab_size=128, d_model=30, n_heads=2)
     with pytest.raises(ValueError, match="even"):
         KatAI1Transformer(cfg)
 
