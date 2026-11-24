@@ -9,6 +9,7 @@ from kat_ai.safety.filters import contains_prompt_injection, output_is_acceptabl
 from kat_ai.inference.engine import InferenceEngine
 from kat_ai.skills.router import route_intent
 from kat_ai.skills.katwork import KatWork
+from kat_ai.skills.permissions import authorize_skill_action
 
 app=FastAPI(title="KatAI Native API",version=__version__,description="Local-first English-learning AI with first-party skills.")
 katwork=KatWork()
@@ -53,6 +54,8 @@ def model_info(authorization: str | None=Header(default=None)):
 @app.post("/v1/katwork/quiz")
 def create_katwork_quiz(request: QuizRequest,authorization: str | None=Header(default=None)):
     verify_auth(authorization)
+    permission=authorize_skill_action("KatWork","create_quiz")
+    if not permission.allowed: raise HTTPException(status_code=403,detail="Skill action denied.")
     return make_quiz(request.topic,request.count,request.difficulty)
 
 @app.post("/v1/chat",response_model=ChatResponse)
@@ -68,6 +71,8 @@ def chat(request: ChatRequest,authorization: str | None=Header(default=None)):
             response=REFUSAL,blocked=True,reason=scope.reason)
     route=route_intent(request.message,request.task)
     if route.skill=="KatWork":
+        permission=authorize_skill_action("KatWork","create_quiz")
+        if not permission.allowed: raise HTTPException(status_code=403,detail="Skill action denied.")
         topic=extract_quiz_topic(request.message)
         found=re.search(r"\b(\d{1,2})\s*(?:câu|questions?)?\b",request.message.casefold())
         count=min(20,max(1,int(found.group(1)))) if found else 5
@@ -76,6 +81,8 @@ def chat(request: ChatRequest,authorization: str | None=Header(default=None)):
             response=f"Mình đã tạo {quiz['question_count']} câu hỏi về {topic} cho PHÒNG HỌC AI.",
             blocked=False,skill="KatWork",tool_result=quiz)
     if route.skill=="KatGames":
+        permission=authorize_skill_action("KatGames","read_progress_summary")
+        if not permission.allowed: raise HTTPException(status_code=403,detail="Skill action denied.")
         return ChatResponse(success=True,model="katai-native",task="game_progress",language=request.language,
             response="KatGames đã nhận diện yêu cầu. Tiến độ chỉ được đọc qua API KatLearn đã xác thực; adapter chưa được cấu hình.",
             blocked=False,skill="KatGames",reason="katlearn_progress_adapter_not_configured")
