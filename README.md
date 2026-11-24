@@ -6,7 +6,7 @@ KatAI is a local-first bilingual (English/Vietnamese) English-learning AI projec
 
 - **Native model foundation:** decoder-only Transformer, SentencePiece tokenizer pipeline, training loop, checkpoint/resume, inference engine, and CLI.
 - **Safety baseline v2:** Unicode normalization, invisible-format-character removal, prompt-injection pattern checks, conservative English-learning scope gate, and tool payload limits.
-- **Skill Router:** routes quiz-generation requests to KatWork and progress requests to KatGames.
+- **Skill Router + permission allowlist:** routes quiz-generation requests to KatWork and progress requests to KatGames; skill actions use default-deny permissions.
 - **KatWork:** runs inside KatLearn's existing **PHÒNG HỌC AI** chat flow. It returns a structured multiple-choice quiz pack and has a direct `POST /v1/katwork/quiz` endpoint. Starter bank: Present Perfect (10 distinct questions), Simple Past (5), Articles (3). Unsupported topics fail closed until a native generator is connected.
 - **KatGames:** read-only progress summarizer. It has no method for changing scores, rewards, game state, or KatCoin. Live KatLearn data adapter is not configured.
 - **Automated tests:** safety, scope, routing, quiz validation, API, and read-only progress tests.
