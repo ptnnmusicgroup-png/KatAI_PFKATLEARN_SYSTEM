@@ -60,7 +60,8 @@ KatAI_PFKATLEARN_SYSTEM/
 │   ├── 02-ROADMAP-AND-MILESTONES.md
 │   ├── 03-DATASET-AND-TRAINING-POLICY.md
 │   ├── 04-SAFETY-AND-EVALUATION.md
-│   └── 05-LOCAL-DEVELOPMENT-AND-DEPLOYMENT.md
+│   ├── 05-LOCAL-DEVELOPMENT-AND-DEPLOYMENT.md
+│   └── 06-V0.3-SAFETY-AND-SKILLS.md
 ├── kat_ai/                 # implementation, introduced after design review
 ├── datasets/               # metadata/manifests; no private data or secrets
 ├── experiments/            # reproducible experiment configs and reports
@@ -81,11 +82,23 @@ KatAI_PFKATLEARN_SYSTEM/
 
 See the documents in `docs/` for the full plan.
 
-## 6. Hardware reality
+## 6. v0.3.0 upgrade direction
+
+The v0.3.0 specification is recorded in [docs/06-V0.3-SAFETY-AND-SKILLS.md](docs/06-V0.3-SAFETY-AND-SKILLS.md).
+
+- **Safety Engine v2:** layered request/output checks, strict tool permissions, prompt-injection defenses, privacy boundaries, and regression tests.
+- **Skill Router:** routes supported English-learning requests to narrowly permissioned skills.
+- **KatWork:** backend quiz-generation skill invoked from KatLearn's existing **PHÒNG HỌC AI** tab. KatLearn remains responsible for quiz rendering, answer submission, and scoring.
+- **KatGames:** read-only progress analysis by default. It must not change KatCoin, rewards, scores, or game synchronization.
+- **Learning skills:** KatVocab, KatGrammar, KatTranslate, KatWriting, KatReading, KatListening, KatIELTS, KatProgress, KatStudyPlan, and KatDictionary.
+
+These are approved architectural targets, not claims of completed implementation.
+
+## 7. Hardware reality
 
 The currently known development machine is a Dell OptiPlex 7050 Micro with Intel Core i5-7500T, 16 GB RAM, and Intel HD 630 integrated graphics. It can support Python development, small classifiers, data preprocessing, and very small CPU training experiments. It is not a practical machine for pretraining a capable modern LLM. Initial model work must be sized accordingly; larger experiments may require rented or otherwise available GPU compute.
 
-## 7. What this project is not
+## 8. What this project is not
 
 - Not a Gemini wrapper renamed as KatAI.
 - Not a universal homework solver.
@@ -93,8 +106,8 @@ The currently known development machine is a Dell OptiPlex 7050 Micro with Intel
 - Not a system that learns automatically from student chats without explicit governance.
 - Not a replacement for teacher judgment or verified learning materials.
 
-## 8. Current status
+## 9. Current status
 
-This repository is currently a planning repository. The documents define intended behavior and implementation direction; they do **not** mean a model has already been trained or that the system is production-ready.
+This repository is a planning/specification repository. The v0.3.0 document records the requested architecture and acceptance criteria; it does **not** mean the features are implemented, the model has been trained, tests have passed, or KatLearn integration is complete.
 
-**Next decision:** review and approve the specification before implementation begins.
+**Next engineering step:** audit the existing v0.2.0 source, then implement Safety Engine v2 and its regression tests before enabling skills for real learners.
