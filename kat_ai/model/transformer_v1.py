@@ -137,8 +137,8 @@ class KatAI1Transformer(nn.Module):
         self.blocks = nn.Sequential(*(TransformerBlockV1(cfg) for _ in range(cfg.n_layers)))
         self.final_norm = RMSNorm(cfg.d_model, cfg.norm_eps)
         self.lm_head = nn.Linear(cfg.d_model, cfg.vocab_size, bias=False)
-        self.lm_head.weight = self.token_embedding.weight
         self.apply(self._init_weights)
+        self.lm_head.weight = self.token_embedding.weight
 
     @staticmethod
     def _init_weights(module):
