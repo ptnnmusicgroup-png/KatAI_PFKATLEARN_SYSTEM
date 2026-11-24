@@ -3,7 +3,7 @@ import re
 import unicodedata
 
 PATTERNS = (
-    r"ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|rules?|messages?)",
+    r"ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instruc\s*tions?|rules?|messages?)",
     r"disregard\s+(all\s+)?(previous|prior|above)\s+(instructions?|rules?)",
     r"(reveal|print|show|repeat|expose)\s+(the\s+)?(system prompt|hidden instructions|developer message|api key|secret)",
     r"(act as|pretend to be)\s+(an?\s+)?(unrestricted|uncensored|jailbroken|no[- ]rules)\s+(ai|assistant|model)",
@@ -18,7 +18,13 @@ def normalize_security_text(text: str) -> str:
 
 def contains_prompt_injection(text: str) -> bool:
     normalized = normalize_security_text(text)
-    return any(re.search(p, normalized, re.I) for p in PATTERNS)
+    # Attack strings sometimes insert whitespace inside a keyword after
+    # invisible Unicode has been stripped. Permit spacing within matched phrases.
+    for pattern in PATTERNS:
+        tolerant_pattern = pattern.replace(r"\s+", r"\s*")
+        if re.search(tolerant_pattern, normalized, re.I):
+            return True
+    return False
 
 def validate_tool_payload(payload, max_items=50, max_text=4000) -> bool:
     if not isinstance(payload, dict) or len(payload) > 32:

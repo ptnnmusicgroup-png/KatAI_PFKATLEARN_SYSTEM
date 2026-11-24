@@ -52,3 +52,33 @@ The response contains `skill: "KatWork"` and a structured `tool_result` pack for
 ## Release state
 
 **v0.3.0 code prototype.** Automated tests in this repository must pass before release. Do not treat this version as production-ready.
+
+
+## K.AI 1 development
+
+The `katai-v1-development` branch contains the next model architecture under the product name **KatLearn K.AI 1**. It is a development candidate, not yet a trained or production-ready release.
+
+### K.AI 1 architecture
+- RoPE positional encoding, RMSNorm, SwiGLU, and PyTorch scaled dot-product causal attention.
+- Independent versioned training and inference modules.
+- Separate last and best-validation checkpoints.
+- API runtime selection with `KATAI_MODEL_VERSION=1`.
+- CLI commands: `katai train-kai1` and `katai chat-kai1`.
+
+Example training command:
+
+```powershell
+katai train-kai1 --data datasets/train.jsonl --tokenizer artifacts/tokenizer/tokenizer.model --output checkpoints/kai1.pt --steps 2000
+```
+
+Example local inference:
+
+```powershell
+katai chat-kai1 --checkpoint checkpoints/kai1.best.pt --tokenizer artifacts/tokenizer/tokenizer.model
+```
+
+To select K.AI 1 in the API, configure `KATAI_MODEL_VERSION=1`, `KATAI1_CHECKPOINT`, and `KATAI1_TOKENIZER`. The service returns 503 if the required trained checkpoint/tokenizer are missing; it never falls back to Gemini.
+
+See [K.AI 1 Model Card](docs/KAI-1-MODEL-CARD.md) for architecture, data requirements, evaluation, and release gates.
+
+**Important:** This branch contains model code and tests, not trained model weights. Do not call it a final K.AI 1 release until the release gates in the model card have been met.
